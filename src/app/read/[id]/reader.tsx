@@ -262,7 +262,7 @@ export function Reader({
     resetIdleTimer,
   ]);
 
-  const isChromeHidden = false;
+  const isChromeHidden = isFullscreen && !isChromeVisible;
 
   const showToast = useCallback(
     (message: string, action?: { label: string; onClick: () => void }, duration = 3500) => {
