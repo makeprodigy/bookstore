@@ -83,6 +83,154 @@ function selectedRects(range: Range, wrapperRect: DOMRect): HighlightRect[] {
   });
 }
 
+function useFocusTrap(
+  isOpen: boolean,
+  containerRef: React.RefObject<HTMLElement | null>,
+  triggerRef?: React.RefObject<HTMLElement | null>
+) {
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const triggerNode = triggerRef?.current ?? null;
+    previousActiveElementRef.current =
+      (document.activeElement as HTMLElement) || triggerNode;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const frameId = requestAnimationFrame(() => {
+      const focusables = Array.from(
+        container.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    });
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+
+      const focusables = Array.from(
+        container.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+      if (focusables.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusables[0];
+      const lastElement = focusables[focusables.length - 1];
+
+      if (event.shiftKey) {
+        if (
+          document.activeElement === firstElement ||
+          !container.contains(document.activeElement)
+        ) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        if (
+          document.activeElement === lastElement ||
+          !container.contains(document.activeElement)
+        ) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("keydown", handleKeyDown);
+      const returnTarget = triggerNode || previousActiveElementRef.current;
+      if (returnTarget && typeof returnTarget.focus === "function") {
+        returnTarget.focus();
+      }
+    };
+  }, [isOpen, containerRef, triggerRef]);
+}
+
+function PageSkeleton({
+  width,
+  aspect = 1 / 1.414,
+}: {
+  width?: number;
+  aspect?: number;
+}) {
+  const estimatedWidth = width ? `${width}px` : "min(580px, 85vw)";
+  const estimatedHeight = width
+    ? `${Math.round(width / (aspect || 1 / 1.414))}px`
+    : "min(820px, 75dvh)";
+
+  return (
+    <div
+      role="status"
+      aria-label="Loading PDF page"
+      className="relative animate-pulse motion-reduce:animate-none rounded-xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200/80 dark:border-slate-700/60 p-6 sm:p-10 flex flex-col justify-between overflow-hidden"
+      style={{
+        width: estimatedWidth,
+        height: estimatedHeight,
+        maxWidth: "100%",
+      }}
+    >
+      <div className="space-y-4">
+        {/* Title placeholder */}
+        <div className="h-6 w-3/4 rounded-md bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-1/3 rounded-md bg-slate-200/70 dark:bg-slate-700/70" />
+
+        {/* Text paragraph placeholder */}
+        <div className="pt-6 space-y-2.5">
+          <div className="h-3 w-full rounded bg-slate-200/60 dark:bg-slate-700/60" />
+          <div className="h-3 w-full rounded bg-slate-200/60 dark:bg-slate-700/60" />
+          <div className="h-3 w-11/12 rounded bg-slate-200/60 dark:bg-slate-700/60" />
+          <div className="h-3 w-4/5 rounded bg-slate-200/60 dark:bg-slate-700/60" />
+        </div>
+
+        {/* Figure/diagram placeholder */}
+        <div className="pt-4">
+          <div className="h-32 sm:h-44 w-full rounded-lg bg-slate-100 dark:bg-slate-700/40 border border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center">
+            <svg
+              className="h-8 w-8 text-slate-300 dark:text-slate-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Text paragraph 2 placeholder */}
+        <div className="pt-4 space-y-2.5">
+          <div className="h-3 w-full rounded bg-slate-200/60 dark:bg-slate-700/60" />
+          <div className="h-3 w-5/6 rounded bg-slate-200/60 dark:bg-slate-700/60" />
+          <div className="h-3 w-3/4 rounded bg-slate-200/60 dark:bg-slate-700/60" />
+        </div>
+      </div>
+
+      {/* Page footer placeholder */}
+      <div className="flex justify-between items-center pt-6 border-t border-slate-100 dark:border-slate-700/40">
+        <div className="h-3 w-16 rounded bg-slate-200/50 dark:bg-slate-700/50" />
+        <div className="h-3 w-6 rounded bg-slate-200/50 dark:bg-slate-700/50" />
+      </div>
+    </div>
+  );
+}
+
 export function Reader({
   bookId,
   initialBookmarks,
@@ -103,7 +251,9 @@ export function Reader({
   const [readTill, setReadTill] = useState(Math.min(Math.max(initialReadTill, 0), initialNumPages));
   const [pageInput, setPageInput] = useState(String(initialPage));
 
-  const [currentSignedUrl] = useState(signedUrl);
+  const [currentSignedUrl, setCurrentSignedUrl] = useState(signedUrl);
+  const [isReloadingUrl, setIsReloadingUrl] = useState(false);
+  const [reloadError, setReloadError] = useState<string | null>(null);
 
   const [bookmarks, setBookmarks] = useState(initialBookmarks);
   const [highlights, setHighlights] = useState(initialHighlights);
@@ -116,6 +266,8 @@ export function Reader({
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
+  useFocusTrap(isDrawerOpen, drawerRef, annotationsButtonRef);
+  useFocusTrap(isMoreMenuOpen, moreMenuRef, moreButtonRef);
 
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState(initialDataError);
@@ -868,6 +1020,50 @@ export function Reader({
     setDeletingHighlightId(null);
   }
 
+  const handleReloadSignedUrl = useCallback(async () => {
+    setIsReloadingUrl(true);
+    setReloadError(null);
+    try {
+      if (signedUrl.startsWith("/") && !storagePath) {
+        setDocumentError(null);
+        setCurrentSignedUrl(`${signedUrl.split("?")[0]}?reload=${Date.now()}`);
+        return;
+      }
+
+      let path = storagePath;
+      if (!path) {
+        const { data: bookData, error: bookErr } = await supabase
+          .from("books")
+          .select("storage_path")
+          .eq("id", bookId)
+          .single();
+        if (bookErr || !bookData?.storage_path) {
+          throw new Error(bookErr?.message ?? "Could not find PDF storage path.");
+        }
+        path = bookData.storage_path;
+      }
+
+      if (!path) {
+        throw new Error("PDF storage path is not available.");
+      }
+
+      const { data: freshSignedUrl, error: signedUrlErr } = await supabase.storage
+        .from("books")
+        .createSignedUrl(path, 60 * 60);
+
+      if (signedUrlErr || !freshSignedUrl?.signedUrl) {
+        throw new Error(signedUrlErr?.message ?? "Could not generate fresh signed URL.");
+      }
+
+      setDocumentError(null);
+      setCurrentSignedUrl(freshSignedUrl.signedUrl);
+    } catch (err) {
+      setReloadError(errorMessage(err));
+    } finally {
+      setIsReloadingUrl(false);
+    }
+  }, [bookId, signedUrl, storagePath, supabase]);
+
   useEffect(() => {
     toggleBookmarkRef.current = toggleBookmark;
     addHighlightRef.current = addHighlight;
@@ -1241,15 +1437,81 @@ export function Reader({
       >
         <div className="m-auto p-2 sm:p-4 w-fit h-fit flex items-center justify-center">
           {documentError ? (
-            <div className="p-8 text-center bg-[var(--background)] rounded-xl shadow border border-red-200 dark:border-red-900">
-              <p className="text-red-600 dark:text-red-400 font-medium" role="alert">
-                Could not render this PDF: {documentError}
-              </p>
+            <div
+              className="p-6 sm:p-8 text-center bg-[var(--background)] rounded-2xl shadow-xl border border-red-200 dark:border-red-900/60 max-w-md mx-auto space-y-4"
+              role="alert"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                  Failed to load PDF
+                </h3>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  {documentError}
+                </p>
+                {reloadError && (
+                  <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                    {reloadError}
+                  </p>
+                )}
+              </div>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={isReloadingUrl}
+                  onClick={() => void handleReloadSignedUrl()}
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:opacity-50 transition-colors"
+                >
+                  {isReloadingUrl ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
+                      </svg>
+                      Reloading…
+                    </span>
+                  ) : (
+                    "Reload PDF"
+                  )}
+                </button>
+                <Link
+                  href="/library"
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 transition-colors"
+                >
+                  Back to Library
+                </Link>
+              </div>
             </div>
           ) : (
             <Document
               file={currentSignedUrl}
-              loading={<div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">Loading PDF…</div>}
+              loading={<PageSkeleton width={pageWidth} aspect={pageAspect} />}
               onLoadError={(loadError) => setDocumentError(errorMessage(loadError))}
               onLoadSuccess={({ numPages: loadedPageCount }) => {
                 setNumPages(loadedPageCount);
@@ -1272,7 +1534,7 @@ export function Reader({
                     renderAnnotationLayer
                     renderTextLayer
                     className="overflow-hidden"
-                    loading={<div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">Loading PDF…</div>}
+                    loading={<PageSkeleton width={pageWidth} aspect={pageAspect} />}
                     onLoadSuccess={(page) => {
                       const vp = page.getViewport({ scale: 1 });
                       if (vp.height > 0 && vp.width > 0) {
