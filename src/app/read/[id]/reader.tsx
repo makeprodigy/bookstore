@@ -1110,6 +1110,106 @@ export function Reader({
               </svg>
             </button>
 
+            {/* Desktop More Popover / Mobile Bottom Sheet */}
+            {isMoreMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40 bg-slate-950/30 sm:bg-transparent"
+                  onClick={() => setIsMoreMenuOpen(false)}
+                  aria-hidden="true"
+                />
+
+                {/* Popover on desktop / tablet (sm+), Bottom Sheet on phone (<sm) */}
+                <div
+                  ref={moreMenuRef}
+                  tabIndex={-1}
+                  className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-auto sm:top-full sm:mt-1.5 w-full sm:w-64 rounded-t-2xl sm:rounded-xl border border-slate-200 dark:border-slate-800 bg-[var(--background)] p-4 sm:p-2 shadow-2xl z-50 text-sm space-y-2 sm:space-y-1 focus:outline-none"
+                  role="menu"
+                  aria-label="More options menu"
+                >
+                  {/* Phone bottom sheet drag handle */}
+                  <div className="sm:hidden w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2" />
+
+                  {/* Zoom controls inside More menu for screens < 1024px */}
+                  <div className="lg:hidden p-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Zoom & Fit</p>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleZoomOut}
+                        disabled={zoomScale <= 0.5}
+                        className="min-h-11 min-w-11 p-2 rounded-lg border border-slate-300 dark:border-slate-600 flex items-center justify-center disabled:opacity-40 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                        aria-label="Zoom out"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={toggleFitMode}
+                        className="min-h-11 flex-1 px-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                      >
+                        {zoomScale !== 1.0 ? `${Math.round(zoomScale * 100)}%` : fitMode === "fit-page" ? "Fit page" : "Fit width"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleZoomIn}
+                        disabled={zoomScale >= 3.0}
+                        className="min-h-11 min-w-11 p-2 rounded-lg border border-slate-300 dark:border-slate-600 flex items-center justify-center disabled:opacity-40 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                        aria-label="Zoom in"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      void markReadTillHere();
+                    }}
+                    disabled={isMarkingReadTill}
+                    className="w-full min-h-11 px-3 py-2.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                  >
+                    <span>{isMarkingReadTill ? "Marking…" : "Mark read till here"}</span>
+                    <span className="text-xs text-slate-400 font-mono">m</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      changePage(readTill);
+                    }}
+                    disabled={readTill < 1}
+                    className="w-full min-h-11 px-3 py-2.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between font-medium disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                  >
+                    <span>Jump to read-till</span>
+                    <span className="text-xs text-slate-400 font-mono">{readTill > 0 ? `p.${readTill}` : "—"}</span>
+                  </button>
+
+                  {canFullscreen && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        void toggleFullscreen();
+                      }}
+                      className="w-full min-h-11 px-3 py-2.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between font-medium sm:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                    >
+                      <span>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -1470,6 +1570,174 @@ export function Reader({
         ))}
       </div>
 
+      {/* =========================================================================
+          ANNOTATIONS OVERLAY DRAWER
+          width: min(360px, 90vw), tabs "Bookmarks | Highlights"
+          Does NOT resize page; slides over page
+          ========================================================================= */}
+      {isDrawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/40 motion-reduce:transition-none transition-opacity duration-150"
+          onClick={() => setIsDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        ref={drawerRef}
+        aria-label="Annotations drawer"
+        aria-hidden={!isDrawerOpen}
+        tabIndex={-1}
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[min(360px,90vw)] bg-[var(--background)] border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col transform transition-transform motion-reduce:transition-none duration-150 ease-out focus:outline-none ${
+          isDrawerOpen ? "translate-x-0" : "translate-x-full pointer-events-none invisible"
+        }`}
+      >
+        {/* Drawer Header */}
+        <div className="h-[calc(48px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 shrink-0">
+          <h2 className="font-semibold text-base">Annotations</h2>
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(false)}
+            className="min-h-11 min-w-11 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            aria-label="Close annotations drawer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Drawer Tabs */}
+        <div className="flex border-b border-slate-200 dark:border-slate-800 shrink-0 px-2 pt-2">
+          <button
+            type="button"
+            onClick={() => setDrawerTab("bookmarks")}
+            className={`flex-1 min-h-11 pb-2 font-medium text-sm border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+              drawerTab === "bookmarks"
+                ? "border-sky-600 text-sky-600 dark:text-sky-400"
+                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            Bookmarks ({bookmarks.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setDrawerTab("highlights")}
+            className={`flex-1 min-h-11 pb-2 font-medium text-sm border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+              drawerTab === "highlights"
+                ? "border-sky-600 text-sky-600 dark:text-sky-400"
+                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            Highlights ({highlights.length})
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {drawerTab === "bookmarks" ? (
+            bookmarks.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">
+                <svg className="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                </svg>
+                No bookmarks yet. Tap the bookmark icon to mark this page.
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {bookmarks.map((bookmark) => (
+                  <li
+                    key={bookmark.id}
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        changePage(bookmark.page);
+                        if (window.innerWidth < 1024) setIsDrawerOpen(false);
+                      }}
+                      className="min-h-11 flex-1 text-left text-sm font-medium text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                    >
+                      <span className="font-semibold text-slate-400 text-xs">p.{bookmark.page}</span>
+                      <span>{bookmark.label || `Page ${bookmark.page}`}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          const prev = bookmarks;
+                          setBookmarks((curr) => curr.filter((b) => b.id !== bookmark.id));
+                          const { error } = await supabase.from("bookmarks").delete().eq("id", bookmark.id);
+                          if (error) {
+                            setBookmarks(prev);
+                            setRequestError(`Could not delete bookmark: ${error.message}`);
+                          } else {
+                            showToast(`Deleted bookmark p.${bookmark.page}`);
+                          }
+                        })();
+                      }}
+                      className="min-h-11 min-w-11 p-2 text-slate-400 hover:text-red-600 transition-colors inline-flex items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                      aria-label={`Delete bookmark on page ${bookmark.page}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : highlights.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">
+              <svg className="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+              </svg>
+              No highlights yet. Select text on any page and tap Highlight.
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {highlights.map((highlight) => (
+                <li
+                  key={highlight.id}
+                  className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 hover:bg-slate-50 dark:hover:bg-slate-850"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      changePage(highlight.page);
+                      if (window.innerWidth < 1024) setIsDrawerOpen(false);
+                    }}
+                    className="w-full text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full inline-block"
+                        style={{ backgroundColor: highlight.color }}
+                      />
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        Page {highlight.page}
+                      </span>
+                    </div>
+                    <p className="text-sm line-clamp-3 text-slate-800 dark:text-slate-200 mt-1">
+                      {highlight.text}
+                    </p>
+                  </button>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      disabled={deletingHighlightId === highlight.id}
+                      onClick={() => void deleteHighlight(highlight)}
+                      className="min-h-11 px-3 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-40 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                    >
+                      {deletingHighlightId === highlight.id ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }
