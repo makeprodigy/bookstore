@@ -1,6 +1,6 @@
 # Bookstore
 
-Private, single-user PDF reading with Supabase Auth, Storage, and Postgres.
+Private, self hosted PDF reading with Supabase Auth, Storage, and Postgres.
 
 ## Local development
 
