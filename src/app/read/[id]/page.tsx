@@ -71,6 +71,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
     initialNumPages: book.num_pages,
     initialReadTill: book.read_till,
     signedUrl: signedUrl.signedUrl,
+    storagePath: book.storage_path,
     title: book.title,
     userId: user.id,
   };

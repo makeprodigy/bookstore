@@ -30,6 +30,7 @@ export type ReaderProps = {
   initialReadTill: number;
   initialNumPages: number;
   signedUrl: string;
+  storagePath?: string;
   title: string;
   userId: string;
 };
