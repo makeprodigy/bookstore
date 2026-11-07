@@ -35,6 +35,12 @@ body {
   padding-left: env(safe-area-inset-left);
 }
 
+body:has([data-reader-shell="true"]) {
+  padding: 0;
+  overflow: hidden;
+  height: 100dvh;
+}
+
 button,
 input {
   font: inherit;
