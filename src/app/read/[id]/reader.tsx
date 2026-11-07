@@ -1230,7 +1230,9 @@ export function Reader({
       <main
         ref={viewportRef}
         className="relative flex-1 min-h-0 w-full overflow-auto bg-slate-200/80 dark:bg-slate-950 flex touch-pan-y"
-        
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <div className="m-auto p-2 sm:p-4 w-fit h-fit flex items-center justify-center">
           {documentError ? (
